@@ -1,0 +1,18 @@
+{
+  "driftLimit": 0.002,
+  "ledge": "ledge",
+  "sights": [
+    {
+      "name": "example",
+      "url": "https://example.com/"
+    }
+  ],
+  "apertures": [
+    { "name": "palm", "width": 390, "height": 844 },
+    { "name": "lap", "width": 834, "height": 1112 },
+    { "name": "desk", "width": 1440, "height": 900 }
+  ],
+  "veils": [
+    { "sight": "example", "selector": "[data-clock]" }
+  ]
+}
