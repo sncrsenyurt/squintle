@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readSheet } from "../src/sheet.js";
+import { readSheet, sheetFromHref } from "../src/sheet.js";
 
 const dirs: string[] = [];
 
@@ -137,5 +137,21 @@ describe("readSheet", () => {
 
   it("rejects a path that is not there", () => {
     expect(() => readSheet("no/such/glance.sheet.json")).toThrow("no such sheet");
+  });
+});
+
+describe("sheetFromHref", () => {
+  it("names the sight after the host and keeps the stock apertures", () => {
+    const sheet = sheetFromHref("https://Example.com/hello?x=1");
+    expect(sheet.sights).toEqual([{ name: "example.com", url: "https://Example.com/hello?x=1" }]);
+    expect(sheet.apertures.map((aperture) => aperture.name)).toEqual(["palm", "lap", "desk"]);
+    expect(sheet.veils).toEqual([]);
+    expect(sheet.driftLimit).toBe(0.002);
+    expect(sheet.ledge).toBe("ledge");
+  });
+
+  it("refuses a url that is not http", () => {
+    expect(() => sheetFromHref("ftp://example.com/a")).toThrow("not a url");
+    expect(() => sheetFromHref("http://")).toThrow("not a url");
   });
 });

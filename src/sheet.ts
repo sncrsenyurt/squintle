@@ -151,3 +151,16 @@ export function readSheet(path: string): Sheet {
   }
   return readBody(raw, path);
 }
+
+export function sheetFromHref(href: string): Sheet {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    throw new Error(`${href} is not a url`);
+  }
+  if ((url.protocol !== "http:" && url.protocol !== "https:") || !plainName(url.hostname)) {
+    throw new Error(`${href} is not a url`);
+  }
+  return readBody({ sights: [{ name: url.hostname, url: href }] }, href);
+}
