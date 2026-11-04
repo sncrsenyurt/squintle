@@ -164,3 +164,7 @@ export function sheetFromHref(href: string): Sheet {
   }
   return readBody({ sights: [{ name: url.hostname, url: href }] }, href);
 }
+
+export function loadSheet(target?: string): Sheet {
+  return readSheet(target ?? "glance.sheet.json");
+}

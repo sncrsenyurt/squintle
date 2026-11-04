@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readSheet, sheetFromHref } from "../src/sheet.js";
+import { loadSheet, readSheet, sheetFromHref } from "../src/sheet.js";
 
 const dirs: string[] = [];
 
@@ -153,5 +153,18 @@ describe("sheetFromHref", () => {
   it("refuses a url that is not http", () => {
     expect(() => sheetFromHref("ftp://example.com/a")).toThrow("not a url");
     expect(() => sheetFromHref("http://")).toThrow("not a url");
+  });
+});
+
+describe("loadSheet", () => {
+  it("reads glance.sheet.json when no path is given", () => {
+    expect(loadSheet().sights[0].url).toBe("https://example.com/");
+  });
+
+  it("reads the path it was handed", () => {
+    const path = writeSheet({
+      sights: [{ name: "alt", url: "http://127.0.0.1:8080/" }],
+    });
+    expect(loadSheet(path).sights).toEqual([{ name: "alt", url: "http://127.0.0.1:8080/" }]);
   });
 });

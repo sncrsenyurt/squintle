@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { parseArgv, usageText } from "./read-args.js";
+import { loadSheet, sheetFromHref } from "./sheet.js";
 
 const parsed = parseArgv(process.argv.slice(2));
 
@@ -11,6 +12,14 @@ if (parsed.kind === "help" || parsed.kind === "empty") {
 if (parsed.kind === "bad") {
   console.error(parsed.reason);
   console.error(usageText());
+  process.exit(1);
+}
+
+try {
+  if (parsed.kind === "url") sheetFromHref(parsed.href);
+  else if (parsed.name !== "approve") loadSheet(parsed.target);
+} catch (err) {
+  console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 }
 
