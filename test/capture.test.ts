@@ -1,8 +1,13 @@
 import { createServer } from "node:http";
 import { once } from "node:events";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { settle } from "../src/capture.js";
+import { capture, settle } from "../src/capture.js";
+import { platePath } from "../src/plate-path.js";
+import type { Sheet } from "../src/sheet.js";
 
 const PAGE = `<!doctype html>
 <meta charset="utf-8">
@@ -89,6 +94,12 @@ async function serve(html: string): Promise<Fixture> {
         server.close((err) => (err ? reject(err) : resolve()));
       }),
   };
+}
+
+function pngSize(file: string): { width: number; height: number } {
+  const buf = readFileSync(file);
+  expect(buf.subarray(0, 4).toString("hex")).toBe("89504e47");
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
 async function holdFonts(page: Page): Promise<void> {
@@ -215,4 +226,34 @@ describe("settle", () => {
       await page.close();
     }
   }, 20_000);
+});
+
+describe("capture", () => {
+  it("writes a full-page plate per aperture", async () => {
+    const fixture = await serve(PAGE);
+    const ledge = mkdtempSync(join(tmpdir(), "squintle-"));
+    try {
+      const sheet: Sheet = {
+        driftLimit: 0.002,
+        ledge,
+        sights: [{ name: "home", url: fixture.url }],
+        apertures: [
+          { name: "palm", width: 420, height: 320 },
+          { name: "desk", width: 880, height: 500 },
+        ],
+        veils: [{ sight: "home", selector: "[data-clock]" }],
+      };
+      const plates = await capture(sheet, browser);
+      expect(plates).toEqual([platePath(ledge, "home", "palm"), platePath(ledge, "home", "desk")]);
+      const palm = pngSize(plates[0]);
+      const desk = pngSize(plates[1]);
+      expect(palm.width).toBe(420);
+      expect(desk.width).toBe(880);
+      expect(palm.height).toBeGreaterThan(320);
+      expect(desk.height).toBeGreaterThan(500);
+    } finally {
+      await fixture.close();
+      rmSync(ledge, { recursive: true, force: true });
+    }
+  }, 30_000);
 });

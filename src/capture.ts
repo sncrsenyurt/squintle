@@ -1,4 +1,8 @@
-import { errors, type Page } from "playwright";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { chromium, errors, type Browser, type Page } from "playwright";
+import { platePath } from "./plate-path.js";
+import type { Sheet } from "./sheet.js";
 
 const STILL = `
   html body *,
@@ -66,4 +70,29 @@ export async function settle(page: Page, selectors: string[]): Promise<void> {
     },
     { selectors, ink: INK },
   );
+}
+
+export async function capture(sheet: Sheet, browser?: Browser): Promise<string[]> {
+  const opened = browser ?? (await chromium.launch());
+  const plates: string[] = [];
+  try {
+    const page = await opened.newPage();
+    for (const sight of sheet.sights) {
+      const selectors = sheet.veils
+        .filter((veil) => veil.sight === sight.name)
+        .map((veil) => veil.selector);
+      for (const aperture of sheet.apertures) {
+        await page.setViewportSize({ width: aperture.width, height: aperture.height });
+        await page.goto(sight.url, { waitUntil: "domcontentloaded" });
+        await settle(page, selectors);
+        const file = platePath(sheet.ledge, sight.name, aperture.name);
+        mkdirSync(dirname(file), { recursive: true });
+        await page.screenshot({ path: file, fullPage: true, caret: "initial" });
+        plates.push(file);
+      }
+    }
+  } finally {
+    if (!browser) await opened.close();
+  }
+  return plates;
 }
