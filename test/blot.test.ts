@@ -134,4 +134,24 @@ describe("comparePlates", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("ignores a nudge that stays inside the grain", () => {
+    const kept = solid(4, 4, PAPER);
+    const fresh = dot(kept, 2, 2, [246, 243, 234, 255]);
+    const drift = comparePlates(kept, fresh, 0, 2);
+    expect(drift.changed).toBe(0);
+    expect(drift.ratio).toBe(0);
+    expect(drift.passed).toBe(true);
+    expect(pixel(drift.blot, 2, 2)).toEqual([246, 243, 234, 255]);
+  });
+
+  it("counts a channel that steps past the grain", () => {
+    const kept = solid(4, 4, PAPER);
+    const fresh = dot(kept, 2, 2, [246, 250, 234, 255]);
+    const drift = comparePlates(kept, fresh, 0, 2);
+    expect(drift.changed).toBe(1);
+    expect(drift.passed).toBe(false);
+    expect(pixel(drift.blot, 2, 2)).toEqual(BLOT);
+    expect(pixel(drift.blot, 0, 0)).toEqual(PAPER);
+  });
 });

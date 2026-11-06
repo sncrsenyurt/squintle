@@ -24,10 +24,20 @@ function stamp(data: Buffer, at: number) {
   data[at + 3] = BLOT[3];
 }
 
+function moved(a: Buffer, b: Buffer, at: number, grain: number): boolean {
+  return (
+    Math.abs(a[at] - b[at]) > grain ||
+    Math.abs(a[at + 1] - b[at + 1]) > grain ||
+    Math.abs(a[at + 2] - b[at + 2]) > grain ||
+    Math.abs(a[at + 3] - b[at + 3]) > grain
+  );
+}
+
 export function comparePlates(
   kept: Buffer | string,
   fresh: Buffer | string,
   driftLimit: number,
+  grain = 0,
 ): Drift {
   const base = readPlate(kept);
   const next = readPlate(fresh);
@@ -48,14 +58,7 @@ export function comparePlates(
   const pixels = base.width * base.height;
   let changed = 0;
   for (let i = 0; i < pixels * 4; i += 4) {
-    if (
-      base.data[i] === next.data[i] &&
-      base.data[i + 1] === next.data[i + 1] &&
-      base.data[i + 2] === next.data[i + 2] &&
-      base.data[i + 3] === next.data[i + 3]
-    ) {
-      continue;
-    }
+    if (!moved(base.data, next.data, i, grain)) continue;
     changed++;
     stamp(next.data, i);
   }
