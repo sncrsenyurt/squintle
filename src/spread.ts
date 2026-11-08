@@ -109,7 +109,7 @@ img { display: block; max-width: 320px; height: auto; border: 1px solid #bbb; ba
 .missing { margin: 0; padding: 12px; border: 1px dashed #999; color: #555; }
 .wipe { margin-top: 12px; max-width: 480px; }
 .frame { position: relative; }
-.frame .kept { display: block; width: 100%; height: auto; }
+.frame .kept { display: block; width: 100%; max-width: none; height: auto; }
 .fresh-clip { position: absolute; top: 0; bottom: 0; left: 0; width: 50%; overflow: hidden; }
 .frame img { border: 0; }
 .frame .fresh { height: 100%; width: auto; max-width: none; }

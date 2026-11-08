@@ -10,6 +10,7 @@ import {
 } from "./ledger.js";
 import { parseArgv, usageText } from "./read-args.js";
 import { loadSheet, sheetFromHref } from "./sheet.js";
+import { spreadPath, writeSpread } from "./spread.js";
 
 type Say = (line: string) => void;
 
@@ -58,8 +59,11 @@ export async function run(argv: string[], io?: Partial<RunIO>): Promise<number> 
       await shoot({ ...sheet, ledge: join(sheet.ledge, "fresh") });
       const ledger = makeLedger(sheet, sheetPath, now());
       const path = ledgerPath(sheet.ledge);
+      const spread = spreadPath(sheet.ledge);
       writeLedger(path, ledger);
+      writeSpread(spread, ledger);
       for (const folio of ledger.folios) log(folioLine(folio));
+      log(spread);
       log(path);
       return ledger.passed ? 0 : 1;
     }

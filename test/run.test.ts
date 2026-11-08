@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ledgerPath, readLedger } from "../src/ledger.js";
 import { freshPath, keptPath, platePath } from "../src/plate-path.js";
 import { run } from "../src/run.js";
+import { spreadPath } from "../src/spread.js";
 import type { Sheet } from "../src/sheet.js";
 
 const PAPER = [244, 241, 234, 255];
@@ -296,6 +297,52 @@ describe("run", () => {
     expect(code).toBe(1);
     expect(errors).toEqual(["browser quit"]);
     expect(existsSync(ledgerPath(ledge))).toBe(false);
+    expect(existsSync(spreadPath(ledge))).toBe(false);
+  });
+
+  it("writes a spread beside the ledger", async () => {
+    const dir = scratch();
+    const { path, ledge } = writeSheet(dir, 0);
+    const plate = solid(4, 4, PAPER);
+    put(keptPath(ledge, "home", "palm"), plate);
+    const lines: string[] = [];
+
+    const code = await run(["compare", path], {
+      log: (line) => lines.push(line),
+      now: () => RAN,
+      capture: async (sheet) => {
+        const written: string[] = [];
+        for (const sight of sheet.sights) {
+          for (const aperture of sheet.apertures) {
+            const file = platePath(sheet.ledge, sight.name, aperture.name);
+            put(file, plate);
+            written.push(file);
+          }
+        }
+        return written;
+      },
+    });
+
+    const spread = spreadPath(ledge);
+    const html = readFileSync(spread, "utf8");
+    expect(code).toBe(1);
+    expect(lines.at(-1)).toBe(ledgerPath(ledge));
+    expect(lines).toContain(spread);
+    expect(lines).toContain("home palm 0 ok");
+    expect(lines).toContain("home desk missing");
+    expect(html).toContain('data-sight="home"');
+    expect(html.indexOf('data-aperture="desk"')).toBeGreaterThan(html.indexOf('data-aperture="palm"'));
+    expect(html).toContain('type="range"');
+    expect(html).toContain("kept missing");
+    expect(html).toContain("no blot");
+    expect(html).toContain("<style>");
+    expect(html).toContain("<script>");
+    expect(html).toContain("kept/");
+    expect(html).toContain("fresh/");
+    expect(html).toContain("blot/");
+    expect(html).not.toMatch(/<script[^>]*\ssrc\s*=/i);
+    expect(html).not.toMatch(/<link\b/i);
+    expect(html).not.toMatch(/https?:\/\//i);
   });
 
   it("approves the fresh plates from the run", async () => {
