@@ -1,0 +1,76 @@
+name: porch
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  plates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: npm run build
+
+      - name: serve before
+        run: |
+          nohup node porch/serve.mjs porch/before 4173 > /tmp/porch.log 2>&1 &
+          echo $! > /tmp/porch.pid
+          disown
+          for _ in $(seq 1 50); do
+            if curl -sf http://127.0.0.1:4173/ | grep -q "the side door"; then
+              exit 0
+            fi
+            sleep 0.1
+          done
+          cat /tmp/porch.log
+          exit 1
+
+      - run: node dist/squintle.js capture-baseline porch/sheet.json
+
+      - name: serve after
+        run: |
+          kill "$(cat /tmp/porch.pid)" || true
+          sleep 0.3
+          nohup node porch/serve.mjs porch/after 4173 > /tmp/porch.log 2>&1 &
+          echo $! > /tmp/porch.pid
+          disown
+          for _ in $(seq 1 50); do
+            if curl -sf http://127.0.0.1:4173/ | grep -q "the front door"; then
+              exit 0
+            fi
+            sleep 0.1
+          done
+          cat /tmp/porch.log
+          exit 1
+
+      - name: compare
+        run: |
+          set +e
+          node dist/squintle.js compare porch/sheet.json > /tmp/compare.out
+          code=$?
+          set -e
+          cat /tmp/compare.out
+          if [ "$code" -ne 1 ]; then
+            echo "compare exited $code, wanted 1"
+            exit 1
+          fi
+          grep -q " over" /tmp/compare.out
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spread
+          if-no-files-found: error
+          path: |
+            porch/spread.html
+            porch/ledger.json
+            porch/ledge
