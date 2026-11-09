@@ -1,0 +1,15 @@
+{
+  "driftLimit": 0.002,
+  "ledge": "porch/ledge",
+  "sights": [
+    { "name": "front", "url": "http://127.0.0.1:4173/" },
+    { "name": "notes", "url": "http://127.0.0.1:4173/notes.html" }
+  ],
+  "apertures": [
+    { "name": "palm", "width": 390, "height": 844 },
+    { "name": "desk", "width": 1440, "height": 900 }
+  ],
+  "veils": [
+    { "sight": "front", "selector": "[data-clock]" }
+  ]
+}
